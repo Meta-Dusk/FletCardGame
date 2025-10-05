@@ -4,7 +4,6 @@ from pathlib import Path
 
 ASSETS_PATH = Path(__file__).resolve().parent.parent / "assets"
 WHITE_CARDS_PATH = ASSETS_PATH / "images" / "cards" / "white"
-TEST_CARD_PATH = ASSETS_PATH / "images" / "cards" / "white" / "Clovers_2_white.png"
 
 def get_file_names(path: Path):
     return [f.name for f in path.iterdir() if f.is_file()]
@@ -18,11 +17,7 @@ def pick_random_src(list: list):
     return format_card(rnd_card)
 
 def pick_then_del(list: list):
-    if len(list) > 0:
-        rnd_card: str = random.choice(list)
-    else:
-        return None
-        
+    rnd_card: str = random.choice(list) if len(list) > 0 else None
     print(f"Picked {rnd_card} from deck of size {len(list)}. Also removing from deck...")
     list.remove(rnd_card)
     print(f"Deck is now {len(list)} cards after removal.")

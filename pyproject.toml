@@ -13,6 +13,8 @@ dependencies = [
   "flet[all]==0.70.0.dev6214",
   "flet-audio==0.2.0.dev511",
   "pip>=25.2",
+  "uiautomation==2.0.29",
+  "psutil==7.1.0",
 ]
 
 [tool.flet]
