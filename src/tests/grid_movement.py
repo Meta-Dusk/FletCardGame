@@ -66,14 +66,18 @@ async def test(page: ft.Page):
     for _ in range(grid_rows):
         row = ft.Row(
             controls=[tile() for _ in range(grid_cols)],
-            alignment=ft.MainAxisAlignment.CENTER, spacing=2,
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=temp_tile.border.left.width,
         )
         rows.append(row)
-        
+    
+    temp_tile = tile()
+    tile_size = temp_tile.width + temp_tile.border.left.width
     grid = ft.Column(
-        controls=rows, spacing=2,
+        controls=rows, spacing=temp_tile.border.left.width,
         alignment=ft.MainAxisAlignment.CENTER,
-        height=52*10, width=52*10
+        width=tile_size * grid_rows,
+        height=tile_size * grid_cols
     )
     
     # --- Character Container ---
