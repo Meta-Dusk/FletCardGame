@@ -62,6 +62,7 @@ async def test(page: ft.Page):
     rows = []
     grid_rows = 10
     grid_cols = 10
+    temp_tile = tile()
     
     for _ in range(grid_rows):
         row = ft.Row(
@@ -71,7 +72,6 @@ async def test(page: ft.Page):
         )
         rows.append(row)
     
-    temp_tile = tile()
     tile_size = temp_tile.width + temp_tile.border.left.width
     grid = ft.Column(
         controls=rows, spacing=temp_tile.border.left.width,
