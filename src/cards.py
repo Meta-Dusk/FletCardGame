@@ -3,9 +3,7 @@ from utilities import assign_values, get_file_names, format_card
 from components import WHITE_CARDS_PATH, BLACK_CARDS_PATH
 from images import CardImage
 from datatypes import Card
-from enum import Enum
 from typing import Optional
-from dataclasses import asdict
 
 
 WHITE_CARDS_LIST = get_file_names(WHITE_CARDS_PATH)
@@ -15,30 +13,10 @@ BLACK_CARDS_VALUES = assign_values(BLACK_CARDS_LIST)
 
 
 # == HELPERS ==
-def matches_query(card: Card, query: str) -> bool:
-    q = query.lower()
-    for _, value in asdict(card).items():
-        if isinstance(value, Enum):
-            if q in value.value.lower():
-                return True
-        elif isinstance(value, str):
-            if q in value.lower():
-                return True
-        elif isinstance(value, list):
-            # compare numeric or string versions of list values
-            if any(q == str(v).lower() for v in value):
-                return True
-    return False
-
-def find_card(cards: list[Card], query: str) -> Optional[Card]:
-    for card in cards:
-        if matches_query(card, query):
+def find_card(deck: list[Card], src: str) -> Card:
+    for card in deck:
+        if card.src.lower() == src.lower():
             return card
-    return None
-
-def find_all_cards(cards: list[Card], query: str) -> list[Card]:
-    return [card for card in cards if matches_query(card, query)]
-
 
 def get_card_value(card_src: Optional[str]) -> Optional[Card]:
     if card_src is None:
@@ -65,11 +43,11 @@ def get_card_counterpart(card_src: Optional[str]) -> Optional[str]:
 
 def print_card_names() -> None:
     print("\nPrinting all the names of the white cards list:")
-    for i in range(len(WHITE_CARDS_LIST)):
-        print(f"{WHITE_CARDS_LIST[i]}")
+    for i in range(len(WHITE_CARDS_VALUES)):
+        print(f"{WHITE_CARDS_VALUES[i].name}")
     print("\nPrinting all the names of the black cards list:")
-    for i in range(len(BLACK_CARDS_LIST)):
-        print(f"{BLACK_CARDS_LIST[i]}")
+    for i in range(len(BLACK_CARDS_VALUES)):
+        print(f"{BLACK_CARDS_VALUES[i].name}")
 
 def print_card_values() -> None:
     print("\nPrinting all the values of the white cards list:")

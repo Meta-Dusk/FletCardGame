@@ -12,13 +12,13 @@ def format_card(path: Path, src: str) -> str:
     """Returns the string of a path with file destination."""
     return Path(path / Path(src)).as_posix()
 
-def pick_random_src(path: Path, list: list) -> str:
+def pick_random_src(path: Path, list: list[str]) -> str:
     """Returns a random src from a list. Use with images."""
     rnd_card: str = random.choice(list)
     print(f"Picked {rnd_card} from deck.")
     return format_card(path, rnd_card)
 
-def pick_then_del(path: Path, *lists: list[str]) -> Optional[str]:
+def pick_then_del(path: Path, *lists: list[Card]) -> Optional[str]:
     """
     Handles card picking by deleting it from one or more decks (lists).
     
@@ -34,15 +34,15 @@ def pick_then_del(path: Path, *lists: list[str]) -> Optional[str]:
     deck_size = len(main_deck)
     rnd_card = random.choice(main_deck)
     
-    print(f"Picked {rnd_card} from deck of size {deck_size}.", end=" ")
+    print(f"Picked {rnd_card.name} from deck of size {deck_size}.", end=" ")
     
     # Remove the picked card from *all* provided lists
     for deck in lists:
         if rnd_card in deck:
             deck.remove(rnd_card)
             
-    print(f"Deck(s) now updated after removal.")
-    return format_card(path, rnd_card)
+    print(f"Deck/s now updated after removal.")
+    return format_card(path, rnd_card.src)
 
 def assign_values(card_list: list[str]) -> list[Card]:
     """Assigns the correct values each card should have."""

@@ -14,6 +14,7 @@ def before_main_ui(page: ft.Page) -> None:
     page.decoration = ft.BoxDecoration(
         border=ft.Border.all(4, ft.Colors.SURFACE_CONTAINER_HIGHEST)
     )
+    page.theme_mode = ft.ThemeMode.DARK
     
     page.window.title_bar_hidden = True
     page.window.width = WINDOW_WIDTH
