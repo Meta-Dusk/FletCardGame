@@ -7,7 +7,8 @@ WINDOW_HEIGHT = 600
 
 
 def before_main_ui(page: ft.Page) -> None:
-    page.title = "Flet Card Game"
+    """Call this before the main UI."""
+    page.title = "Flet Jack"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.vertical_alignment = ft.MainAxisAlignment.END
     page.decoration = ft.BoxDecoration(

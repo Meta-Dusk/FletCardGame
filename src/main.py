@@ -1,10 +1,10 @@
 import flet as ft
 from setup import before_main_ui
-from cards import test
+from main_ui import main_ui
 
 
 async def main(page: ft.Page):
-    await test(page)
+    await main_ui(page)
     
 def before_main(page: ft.Page):
     before_main_ui(page)

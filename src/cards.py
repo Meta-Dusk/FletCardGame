@@ -1,230 +1,127 @@
 import flet as ft
-import random
-from pathlib import Path
-from typing import Optional
-from dataclasses import dataclass
+from utilities import assign_values, get_file_names, format_card
+from components import WHITE_CARDS_PATH, BLACK_CARDS_PATH
+from images import CardImage
+from datatypes import Card
 from enum import Enum
-from setup import before_main_ui
+from typing import Optional
+from dataclasses import asdict
 
 
-class CardType(Enum):
-    NUMBER = "Number"
-    FACE = "Face"
-    FLEXIBLE = "Flexible"
-
-class CardSuite(Enum):
-    SPADES = "Spades/Pikes"
-    CLOVERS = "Clovers"
-    DIAMONDS = "Diamonds/Tiles"
-    HEARTS = "Hearts"
-
-@dataclass
-class Card:
-    src: str
-    name: str
-    type: CardType
-    suite: CardSuite
-    value: list[int]
-    color: str
-
-ASSETS_PATH = Path(__file__).resolve().parent / "assets"
-WHITE_CARDS_PATH = ASSETS_PATH / "images" / "cards" / "white"
-BLACK_CARDS_PATH = ASSETS_PATH / "images" / "cards" / "black"
-CARD_WIDTH = 655
-CARD_HEIGHT = 930
+WHITE_CARDS_LIST = get_file_names(WHITE_CARDS_PATH)
+BLACK_CARDS_LIST = get_file_names(BLACK_CARDS_PATH)
+WHITE_CARDS_VALUES = assign_values(WHITE_CARDS_LIST)
+BLACK_CARDS_VALUES = assign_values(BLACK_CARDS_LIST)
 
 
-def get_file_names(path: Path) -> list[str]:
-    return [f.name for f in path.iterdir() if f.is_file()]
+# == HELPERS ==
+def matches_query(card: Card, query: str) -> bool:
+    q = query.lower()
+    for _, value in asdict(card).items():
+        if isinstance(value, Enum):
+            if q in value.value.lower():
+                return True
+        elif isinstance(value, str):
+            if q in value.lower():
+                return True
+        elif isinstance(value, list):
+            # compare numeric or string versions of list values
+            if any(q == str(v).lower() for v in value):
+                return True
+    return False
 
-def assign_values(card_list: list[str]) -> list[Card]:
-    new_card_list = []
-    for card in card_list:
-        split: list[str] = card.split("_")
-        mid_split: str = split[1]
-        card_value: list[int] = [0]
-        type: str = mid_split
-        color: str = split[2]
-        color = color.removesuffix(".png").title()
-        if mid_split.isdigit():
-            # print(f"{card} is a NUMBER card of value {mid_split}.")
-            card_value = [int(mid_split)]
-            type = CardType.NUMBER.value
-        elif mid_split.isalpha() and not mid_split == "A":
-            # print(f"{card} is a FACE card \"{mid_split}\" of value 10.")
-            card_value = [10]
-            type = CardType.FACE.value
-        else:
-            # print(f"{card} is an ACE card with values of 1 or 11.")
-            card_value = [1, 11]
-            type = CardType.FLEXIBLE.value
-        suite: str = split[0]
-        if suite == "Tiles":
-            suite = "Diamonds"
-        elif suite == "Pikes":
-            suite = "Spades"
-        for card_suite in CardSuite:
-            if suite in card_suite.value:
-                suite = card_suite.name
-                break
-        entry = Card(
-            src=card, name=mid_split if mid_split != "A" else "Ace",
-            type=type, suite=suite, value=card_value, color=color
-        )
-        new_card_list.append(entry)
-    return new_card_list
+def find_card(cards: list[Card], query: str) -> Optional[Card]:
+    for card in cards:
+        if matches_query(card, query):
+            return card
+    return None
 
-def format_card(src: str) -> str:
-    return (WHITE_CARDS_PATH / src).as_posix()
+def find_all_cards(cards: list[Card], query: str) -> list[Card]:
+    return [card for card in cards if matches_query(card, query)]
 
-def pick_random_src(list: list) -> str:
-    rnd_card: str = random.choice(list)
-    print(f"Picked {rnd_card} from deck.")
-    return format_card(rnd_card)
 
-def pick_then_del(list: list) -> Optional[str]:
-    deck_size = len(list)
-    if not deck_size > 0:
-        print("Deck already exhausted.")
+def get_card_value(card_src: Optional[str]) -> Optional[Card]:
+    if card_src is None:
+        return
+    split_dirs = card_src.split("/")
+    card_file = split_dirs[len(split_dirs) - 1]
+    card_color = split_dirs[len(split_dirs) - 2]
+    
+    deck = WHITE_CARDS_VALUES if card_color == "white" else BLACK_CARDS_VALUES
+    card_value = find_card(deck, card_file)
+    return card_value
+
+def get_card_counterpart(card_src: Optional[str]) -> Optional[str]:
+    if card_src is None:
         return None
-    rnd_card: str = random.choice(list)
-    print(f"Picked {rnd_card} from deck of size {deck_size}.", end=" ")
-    list.remove(rnd_card)
-    print(f"Deck is now {deck_size} cards after removal.")
-    return format_card(rnd_card)
+    split_dirs = card_src.split("/")
+    card_file = split_dirs[len(split_dirs) - 1]
+    card_color = split_dirs[len(split_dirs) - 2]
+    if card_color == "white":
+        card_name = format_card(BLACK_CARDS_PATH, card_file)
+    else:
+        card_name = format_card(WHITE_CARDS_PATH, card_file)
+    return card_name
 
-def error_container(text: str) -> ft.Container:
-    return ft.Container(
-        content=ft.Text(text, color=ft.Colors.ERROR),
-        bgcolor=ft.Colors.ERROR_CONTAINER,
-        border=ft.Border.all(2, ft.Colors.ON_ERROR_CONTAINER),
-        padding=5, border_radius=15,
-        width=CARD_WIDTH / 4, height=CARD_HEIGHT / 4,
-        alignment=ft.Alignment.CENTER
-    )
+def print_card_names() -> None:
+    print("\nPrinting all the names of the white cards list:")
+    for i in range(len(WHITE_CARDS_LIST)):
+        print(f"{WHITE_CARDS_LIST[i]}")
+    print("\nPrinting all the names of the black cards list:")
+    for i in range(len(BLACK_CARDS_LIST)):
+        print(f"{BLACK_CARDS_LIST[i]}")
 
-def empty_card_container() -> ft.Container:
-    return ft.Container(
-        bgcolor=ft.Colors.SECONDARY,
-        border=ft.Border.all(2, ft.Colors.ON_SECONDARY),
-        border_radius=15,
-        width=CARD_WIDTH / 4, height=CARD_HEIGHT / 4,
-        alignment=ft.Alignment.CENTER
-    )
+def print_card_values() -> None:
+    print("\nPrinting all the values of the white cards list:")
+    for i in range(len(WHITE_CARDS_VALUES)):
+        print(f"{WHITE_CARDS_VALUES[i]}")
+    print("\nPrinting all the values of the black cards list:")
+    for i in range(len(BLACK_CARDS_VALUES)):
+        print(f"{BLACK_CARDS_VALUES[i]}")
 
-def simple_anim_con(content: ft.Control) -> ft.AnimatedSwitcher:
-    return ft.AnimatedSwitcher(
-        content=content, duration=500, reverse_duration=250,
-        transition=ft.AnimatedSwitcherTransition.SCALE,
-        switch_in_curve=ft.AnimationCurve.EASE_OUT,
-        switch_out_curve=ft.AnimationCurve.EASE_IN
-    )
 
-async def test(page: ft.Page) -> None:
-    # == EVENT HANDLERS ==
-    async def on_keyboard_event(e: ft.KeyboardEvent):
-        if e.key == "Escape":
-            print("Exiting app!")
-            await page.window.close()
-        if e.key == "`":
-            nonlocal card_list
-            print("Clearing deck")
-            card_list = []
-    
-    def pick_card(_):
-        nonlocal rnd_card
-        rnd_card = pick_then_del(card_list)
-        if rnd_card is None:
-            test_card.content = error_container("DECK EXHAUSTED")
-            test_card.max_simultaneous_drags = 0
-            test_btn.disabled = True
-        else:
-            test_card_img.src = rnd_card
-        test_card.update()
-    
-    def drag_will_accept(e: ft.DragWillAcceptEvent):
-        card_cont: ft.Container = e.control.content
-        card_cont.border = ft.Border.all(
-            width=4,
-            color=ft.Colors.PRIMARY if e.accept else ft.Colors.ERROR
-        )
-        card_cont.update()
-    
-    def drag_accept(e: ft.DragTargetEvent):
-        src_anim_sw: ft.AnimatedSwitcher = e.src.content
-        src_card_cont: ft.Image = src_anim_sw.content
+# == COMPONENTS ==
+class CardComponent:
+    """Encapsulates the creation and management of a card image component."""
+
+    def __init__(
+        self, card_src: Optional[str],
+        *, content: Optional[ft.Control] = None
+    ) -> None:
+        """`content` will override `card_src` if not `None`."""
+        self.src: Optional[str] = card_src
+        self.content: Optional[ft.Container | ft.Control] = None
+        self.content = self._build_img(card_src) if content is None else content
         
-        card_cont: ft.Container = e.control.content
-        new_img = ft.Image(
-            src=src_card_cont.src,
-            fit=src_card_cont.fit,
-            width=src_card_cont.width,
-            height=src_card_cont.height
-        )
-        
-        print(f"Setting {card_cont.content} to a new image copied from {src_card_cont.src}")
-        
-        card_cont.content = new_img
-        card_cont.border = ft.Border.all(width=2, color=ft.Colors.ON_SECONDARY)
-        card_cont.update()
+    def _build_img(self, card_src: str) -> ft.Container:
+        """Builds a `CardImage` with `card_src` as the `src`."""
+        return ft.Container(CardImage(card_src))
     
-    def drag_leave(e: ft.DragTargetLeaveEvent):
-        card_cont: ft.Container = e.control.content
-        card_cont.border = ft.Border.all(width=2, color=ft.Colors.ON_SECONDARY)
-        card_cont.update()
+    def replace_content(self, content: ft.Control) -> None:
+        """Replaces the content with a different control."""
+        self.src = None
+        self.content.content = content
+        if self.content.page:
+            self.content.update()
     
-    # == SETUP ==
-    card_list = get_file_names(WHITE_CARDS_PATH)
-    card_values = assign_values(card_list)
-    for i in range(len(card_values)):
-        print(f"{card_values[i]}")
-    rnd_card = pick_then_del(card_list)
+    def update_img(self, card_src: str) -> None:
+        """Safely update the image inside the wrapper."""
+        if self.content is None:
+            return
+        self.src = card_src
+        self.content.src = card_src
+        if self.content.page:
+            self.content.update()
+            
+    def control(self) -> ft.AnimatedSwitcher:
+        """Return the wrapped control for UI placement."""
+        return self.content
     
-    # == CONTROLS ==
-    # Card Component
-    test_card_img = ft.Image(
-        src=rnd_card, width=CARD_WIDTH / 4, height=CARD_HEIGHT / 4,
-        fit=ft.BoxFit.CONTAIN, gapless_playback=True,
-        error_content=error_container("SOURCE ERROR")
-    )
-    test_card_anim_sw = simple_anim_con(test_card_img)
-    test_card = ft.Draggable(
-        content=test_card_anim_sw, group="card",
-        on_drag_complete=pick_card,
-        max_simultaneous_drags=1,
-        content_when_dragging=empty_card_container()
-    )
-    
-    # Card Handlers
-    test_card_dest = ft.DragTarget(
-        content=empty_card_container(),
-        group="card",
-        on_accept=drag_accept,
-        on_leave=drag_leave,
-        on_will_accept=drag_will_accept
-    )
-    
-    # Buttons
-    test_btn = ft.Button(
-        content=ft.Text("Randomize Card"),
-        on_click=pick_card
-    )
-    
-    # Layout
-    card_row = ft.Row(
-        controls=[test_card, test_btn, test_card_dest],
-        alignment=ft.MainAxisAlignment.CENTER,
-        vertical_alignment=ft.CrossAxisAlignment.END
-    )
-    draggable_win = ft.WindowDragArea(
-        content=card_row, expand=True, maximizable=False
-    )
-    
-    # Page Stuff
-    page.add(draggable_win)
-    page.on_keyboard_event = on_keyboard_event
-    await page.window.center()
-    
-    
+    def __call__(self) -> ft.AnimatedSwitcher:
+        """Allow the instance to be used directly in Flet controls."""
+        return self.content
+
+
 if __name__ == "__main__":
-    ft.run(main=test, before_main=before_main_ui)
+    print_card_names()
+    print_card_values()
