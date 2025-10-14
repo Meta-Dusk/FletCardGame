@@ -1,7 +1,7 @@
 [project]
-name = "FletTests"
+name = "FletJack"
 version = "0.1.0"
-description = "Flet Testing"
+description = "A Flet-based Black Jack Card Game"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [
@@ -37,8 +37,8 @@ path = "src"
 
 [tool.flet.app.boot_screen]
 show = true
-message = "Loading... Please wait."
+message = "Loading FletJack... Please wait."
 
 [tool.flet.app.startup_screen]
 show = true
-message = "Loading... Please wait."
+message = "Loading FletJack... Please wait."
