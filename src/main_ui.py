@@ -15,6 +15,15 @@ async def main_ui(page: ft.Page) -> None:
         w_cards_in_hand.append(get_card_value(current_white_card))
         b_cards_in_hand.append(get_card_value(current_black_card))
     
+    def dealer_pick_card():
+        nonlocal w_dealer_cards, b_dealer_cards
+        c_w_dealer_card = pick_then_del(WHITE_CARDS_PATH, white_cards_list, black_cards_list)
+        c_b_dealer_card = get_card_counterpart(c_w_dealer_card)
+        w_dealer_cards.append(get_card_value(c_w_dealer_card))
+        b_dealer_cards.append(get_card_value(c_b_dealer_card))
+        print(f"Dealer's hand: {w_dealer_cards}")
+        
+    
     def calculate_hand_value(cards: list[Card]) -> int:
         """
         Calculates the best total hand value in Blackjack.
@@ -45,6 +54,7 @@ async def main_ui(page: ft.Page) -> None:
         total_card_value_text.update()
     
     # == SETUP ==
+    # TODO: Improve setup by making these classes instead.
     white_cards_list = WHITE_CARDS_VALUES.copy()
     black_cards_list = BLACK_CARDS_VALUES.copy()
     w_cards_in_hand: list[Card] = []
@@ -53,6 +63,13 @@ async def main_ui(page: ft.Page) -> None:
     current_black_card: Optional[str] = None
     choose_random_card()
     total_card_value = calculate_hand_value(w_cards_in_hand)
+    
+    # TODO: Starting hand should be 2 for both dealer and player.
+    w_dealer_cards: list[Card] = []
+    b_dealer_cards: list[Card] = []
+    c_w_dealer_card: Optional[str] = None
+    c_b_dealer_card: Optional[str] = None
+    dealer_pick_card()
     
     
     # == EVENT HANDLERS ==
