@@ -56,8 +56,15 @@ def minimize_button(page: ft.Page) -> ft.IconButton:
         icon=ft.Icons.MINIMIZE, on_click=on_click
     )
 
-def theme_button(page: ft.Page) -> ft.AnimatedSwitcher:
-    """An animated theme-swapping button."""
+def theme_button(
+    page: ft.Page, *,
+    on_click: Optional[ft.ControlEventHandler[ft.IconButton]] = None
+) -> ft.AnimatedSwitcher:
+    """
+    An animated theme-swapping button.
+    Provide a function to `on_click` for it to be called after
+    the theme swap event.
+    """
     def swap_theme(_):
         icon_btn: ft.IconButton = btn.content
         if page.theme_mode == ft.ThemeMode.DARK:
@@ -67,6 +74,9 @@ def theme_button(page: ft.Page) -> ft.AnimatedSwitcher:
             page.theme_mode = ft.ThemeMode.DARK
             icon_btn.icon = ft.Icons.DARK_MODE
         icon_btn.update()
+        if on_click:
+            on_click(_)
+            
     if page.theme_mode == ft.ThemeMode.DARK:
         icon = ft.Icons.DARK_MODE
     else:

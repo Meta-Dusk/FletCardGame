@@ -10,17 +10,28 @@ WHITE_CARDS_LIST = get_file_names(WHITE_CARDS_PATH)
 BLACK_CARDS_LIST = get_file_names(BLACK_CARDS_PATH)
 WHITE_CARDS_VALUES = assign_values(WHITE_CARDS_LIST)
 BLACK_CARDS_VALUES = assign_values(BLACK_CARDS_LIST)
+DEBUG = False
 
 
 # == HELPERS ==
-def find_card(deck: list[Card], src: str) -> Card:
+def _debug_print(msg: str) -> None:
+    if DEBUG:
+        print(f"[DEBUG] {msg}")
+
+def extract_card_file(card_src: str) -> str:
+    split_dirs = card_src.split("/")
+    card_file = split_dirs[len(split_dirs) - 1]
+    return card_file
+
+def find_card(deck: list[Card], card_src: str) -> Card:
     for card in deck:
-        if card.src.lower() == src.lower():
+        src = extract_card_file(card_src)
+        _debug_print(f"Comparing {card.src} with {src}.")
+        if card.src == src:
+            _debug_print("Found match!")
             return card
 
-def get_card_value(card_src: Optional[str]) -> Optional[Card]:
-    if card_src is None:
-        return
+def get_card_value(card_src: str) -> Card:
     split_dirs = card_src.split("/")
     card_file = split_dirs[len(split_dirs) - 1]
     card_color = split_dirs[len(split_dirs) - 2]
@@ -29,17 +40,29 @@ def get_card_value(card_src: Optional[str]) -> Optional[Card]:
     card_value = find_card(deck, card_file)
     return card_value
 
-def get_card_counterpart(card_src: Optional[str]) -> Optional[str]:
-    if card_src is None:
-        return None
-    split_dirs = card_src.split("/")
-    card_file = split_dirs[len(split_dirs) - 1]
-    card_color = split_dirs[len(split_dirs) - 2]
-    if card_color == "white":
-        card_name = format_card(BLACK_CARDS_PATH, card_file)
+def get_card_counterpart(card_src: str, *, invert: bool = False) -> Card:
+    card_file = extract_card_file(card_src)
+    card_segments = card_file.split("_")
+    card_color = card_segments[len(card_segments) - 1].removesuffix(".png")
+    if invert:
+        _debug_print("Getting inverted card counterpart!")
+        card_src = card_src.replace(
+            card_color,
+            "white" if card_color == "black" else "black"
+        )
+        _debug_print(f"Card color is now {card_color}")
+        card = find_card(
+            BLACK_CARDS_VALUES if card_color == "white" else WHITE_CARDS_VALUES,
+            card_src
+        )
+        return card
     else:
-        card_name = format_card(WHITE_CARDS_PATH, card_file)
-    return card_name
+        _debug_print(f"Getting card counterpart for card of color: {card_color}")
+        card = find_card(
+            BLACK_CARDS_VALUES if card_color == "black" else WHITE_CARDS_VALUES,
+            card_src
+        )
+        return card
 
 def print_card_names() -> None:
     print("\nPrinting all the names of the white cards list:")
