@@ -21,7 +21,17 @@ def simple_icon_button(
     return ft.IconButton(
         icon=icon, icon_color=icon_color, on_click=on_click
     )
-    
+
+def simple_button(
+    text: str, icon: Optional[ft.IconDataOrControl] = None,
+    color: ft.ColorValue = ft.Colors.PRIMARY,
+    on_click: Optional[ft.ControlEventHandler[ft.Button]] = None
+) -> ft.Button:
+    """Just a simple button with color applied to both text and icon."""
+    return ft.Button(
+        content=ft.Text(text, color=color, text_align=ft.TextAlign.CENTER),
+        icon=icon, icon_color=color, on_click=on_click
+    )
 
 # === PRE-ASSEMBLED COMPONENTS ===
 # | Buttons |

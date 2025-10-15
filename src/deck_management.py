@@ -1,10 +1,8 @@
 import random
 import flet as ft
 from datatypes import Card, CardType
-from cards import CardComponent, get_card_counterpart, WHITE_CARDS_VALUES, WHITE_CARDS_PATH, BLACK_CARDS_PATH
+from cards import CardComponent, get_card_counterpart, WHITE_CARDS_PATH, BLACK_CARDS_PATH
 from utilities import format_card
-from components import preset_appbar, theme_button, exit_button
-from layouts import preset_win_drag_area
 from typing import Optional
 from pathlib import Path
 
@@ -26,8 +24,10 @@ class Player:
     def _get_path(self) -> Path:
         match self.page.theme_mode:
             case ft.ThemeMode.LIGHT:
+                self._debug_msg("(_get_path) Returning black cards path.\n")
                 return BLACK_CARDS_PATH
             case ft.ThemeMode.DARK:
+                self._debug_msg("(_get_path) Returning white cards path.\n")
                 return WHITE_CARDS_PATH
     
     def _get_card_src(self, card_src: str) -> str:
@@ -38,28 +38,40 @@ class Player:
             handle = f"{"[DEALER]" if self.is_dealer else "[PLAYER]"}"
             print(f"{handle} {msg}")
     
+    def clear_deck(self) -> None:
+        """Resets all values (except for `global_deck`)."""
+        self._debug_msg("(clear_deck) Clearing deck and resetting all values.\n")
+        self.deck_in_hand.clear()
+        self.total_card_value = 0
+        self.rendered_cards.clear()
+        self.card_list_data.clear()
+    
     def calculate_hand_value(self, cards: list[Card]) -> int:
         """
         Calculates the best total hand value in Blackjack.
-        - Adds card values from each card's `.value` list.
-        - Treats `FLEXIBLE` (Ace) cards intelligently as 11 or 1.
+        Handles `FLEXIBLE` (Ace) cards intelligently as 1 or 11.
         """
         total = 0
         flexible_cards = 0
         
-        # Step 1: Add base values (use the *highest* by default for flexible cards)
+        # Step 1: Add the non-flexible cards first
         for card in cards:
+            self._debug_msg(f"(calculate_hand_value) Found card in hand: {card}")
             if card.type == CardType.FLEXIBLE:
+                self._debug_msg(f"(calculate_hand_value) Found a FLEXIBLE card in hand.")
                 flexible_cards += 1
-                total += max(card.value)  # Usually 11
             else:
                 total += card.value[0] if isinstance(card.value, list) else card.value
                 
-        # Step 2: Adjust Aces/FLEXIBLEs if total > 21
-        while total > 21 and flexible_cards > 0:
-            total -= 10  # Convert an Ace from 11 to 1
-            flexible_cards -= 1
-            
+        # Step 2: Add Aces — start from 11, downgrade to 1 as needed
+        for _ in range(flexible_cards):
+            # Try to add 11 if it doesn't bust, otherwise add 1
+            if total + 11 <= 21:
+                total += 11
+            else:
+                total += 1
+                
+        self._debug_msg(f"(calculate_hand_value) Total Card Value is now: {total}\n")
         return total
     
     def draw_card(self) -> None:
@@ -70,12 +82,12 @@ class Player:
         """
         drawn_card: Optional[Card] = None
         if len(self.global_deck) == 0:
-            self._debug_msg("Global deck is empty.")
+            self._debug_msg("\n(draw_card) Global deck is empty.")
             return
         
         # Draw a card from global deck
         drawn_card = random.choice(self.global_deck)
-        self._debug_msg(f"Drawn a card: {drawn_card}")
+        self._debug_msg(f"(draw_card) Drawn a card: {drawn_card}")
         
         # Remove drawn card from global deck
         print(f"Global deck size changed: {len(self.global_deck)} ->", end=" ")
@@ -85,38 +97,53 @@ class Player:
         # Build the drawn card
         self.deck_in_hand.append(drawn_card)
         self.build_card(drawn_card)
+        self.update_cards()
         
         # Update total card value
         new_total_card_value = self.calculate_hand_value(self.deck_in_hand)
-        self._debug_msg(f"Updating total card value: {self.total_card_value} -> {new_total_card_value}")
+        self._debug_msg(f"(draw_card) Updating total card value: {self.total_card_value} -> {new_total_card_value}\n")
         self.total_card_value = new_total_card_value
     
-    def update_card(self) -> None:
-        """Rebuild cards when theme mode changes (light <-> dark)."""
-        if not self.card_list_data:
+    def update_cards(self) -> None:
+        """Rebuild all rendered cards when theme mode changes."""
+        if not self.deck_in_hand:
             return
         
-        self._debug_msg(f"Card List Data: {self.card_list_data}")
-        for card in self.card_list_data:
-            card_counterpart = get_card_counterpart(card.src, invert=True)
-            self._debug_msg(f"src: {card.src}")
-            self._debug_msg(f"Card Counterpart (inv): {card_counterpart}")
+        self._debug_msg("(update_cards) Updating cards for theme switch...")
         
+        # Clear rendered UI lists
         self.rendered_cards.clear()
-        total_cards = self.card_list_data.copy()
         self.card_list_data.clear()
-        for _ in range(len(total_cards)):
-            self.build_card(card_counterpart)
         
-        self._debug_msg(f"Cards updated for theme: {self.page.theme_mode}")
+        # Rebuild each card from the player's current deck
+        for card in self.deck_in_hand:
+            # Get the correct card counterpart path (light <-> dark)
+            invert: bool = False
+            if (
+                card.color == "White" and self.page.theme_mode == ft.ThemeMode.LIGHT or
+                card.color == "Black" and self.page.theme_mode == ft.ThemeMode.DARK
+            ):
+                invert = True
+            card_counterpart = get_card_counterpart(card.src, invert=invert)
+            self._debug_msg(f"(update_cards) Original: {card}\n-> Counterpart: {card_counterpart}")
+            
+            # Create a new CardComponent for the counterpart card
+            self.build_card(card_counterpart)
+            
+        self._debug_msg(f"(update_cards) Cards rebuilt for theme: {self.page.theme_mode}\n")
     
     def build_card(self, drawn_card: Card) -> None:
         new_card_src = self._get_card_src(drawn_card.src)
-        self._debug_msg(f"Building a new card with src: {new_card_src}")
+        self._debug_msg(f"(build_card) Building a new card with src: {new_card_src}\n")
         new_card = CardComponent(new_card_src)
         self.rendered_cards.append(new_card())
         self.card_list_data.append(new_card)
 
+
+# === CLASS PREVIEW ===
+from cards import WHITE_CARDS_VALUES
+from components import preset_appbar, theme_button, exit_button, simple_button
+from layouts import preset_win_drag_area
 
 def before_test(page: ft.Page):
     page.title = "Deck Management Test"
@@ -124,26 +151,84 @@ def before_test(page: ft.Page):
     page.window.title_bar_hidden = True
 
 async def test(page: ft.Page):
+    # Events
+    def update_text_displays():
+        deck_counter_text.spans[1].text = len(white_cards_list)
+        deck_counter_text.update()
+        if player.total_card_value > 21:
+            container: ft.Container = card_val_total.content
+            container.bgcolor = ft.Colors.ERROR_CONTAINER
+            text: ft.Text = container.content
+            text.color = ft.Colors.ERROR
+            card_val_total.update()
+        else:
+            container: ft.Container = card_val_total.content
+            container.bgcolor = ft.Colors.PRIMARY_CONTAINER
+            text: ft.Text = container.content
+            text.color = ft.Colors.PRIMARY
+            card_val_total.update()
+        card_val_total_text.spans[1].text = player.total_card_value
+        card_val_total_text.update()
+    
     # Event Handlers
     def fab_on_click(_):
         player.draw_card()
         card_row.update()
+        update_text_displays()
     
     def theme_btn_on_click(_):
-        player.update_card()
+        player.update_cards()
         card_row.update()
+    
+    def cd_btn_on_click(_):
+        player.clear_deck()
+        card_row.update()
+        update_text_displays()
     
     # Setup
     white_cards_list = WHITE_CARDS_VALUES.copy()
-    player = Player(page, white_cards_list)
+    player = Player(page, white_cards_list, debug=True)
     dealer = Player(page, white_cards_list, is_dealer=True)
+    
+    # Displays
+    card_val_total_text = ft.Text(
+        spans=[
+            ft.TextSpan("Total Card Value: "),
+            ft.TextSpan(player.total_card_value)
+        ], color=ft.Colors.PRIMARY
+    )
+    card_val_total = ft.Container(
+        ft.Container(
+            card_val_total_text, padding=8, alignment=ft.Alignment.CENTER,
+            border_radius=8, bgcolor=ft.Colors.PRIMARY_CONTAINER
+        ), padding=8
+    )
+    
+    deck_counter_text = ft.Text(
+        spans=[
+            ft.TextSpan("Cards in Deck: "),
+            ft.TextSpan(len(white_cards_list))
+        ], color=ft.Colors.TERTIARY
+    )
+    deck_counter = ft.Container(
+        ft.Container(
+            deck_counter_text, padding=8, alignment=ft.Alignment.CENTER,
+            border_radius=8, bgcolor=ft.Colors.TERTIARY_CONTAINER
+        ), padding=8
+    )
     
     # Buttons
     theme_btn = theme_button(page, on_click=theme_btn_on_click)
     exit_btn = exit_button(page)
+    clear_deck_btn = simple_button(
+        "Clear Hand", ft.Icons.CREDIT_CARD_OFF, on_click=cd_btn_on_click
+    )
     
     # App Bar
-    appbar_actions = [theme_btn, exit_btn]
+    appbar_actions = [
+        card_val_total, deck_counter,
+        clear_deck_btn, theme_btn, exit_btn
+    ]
     appbar = preset_appbar("Deck Management Test", appbar_actions)
     
     # Layouts
