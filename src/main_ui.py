@@ -40,12 +40,12 @@ async def main_ui(page: ft.Page) -> None:
                 total += max(card.value)  # Usually 11
             else:
                 total += card.value[0] if isinstance(card.value, list) else card.value
-
+                
         # Step 2: Adjust Aces/FLEXIBLEs if total > 21
         while total > 21 and flexible_cards > 0:
             total -= 10  # Convert an Ace from 11 to 1
             flexible_cards -= 1
-
+            
         return total
     
     def update_total_card_value():

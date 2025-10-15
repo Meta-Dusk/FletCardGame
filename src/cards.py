@@ -61,19 +61,22 @@ def print_card_values() -> None:
 # == COMPONENTS ==
 class CardComponent:
     """Encapsulates the creation and management of a card image component."""
-
     def __init__(
         self, card_src: Optional[str],
         *, content: Optional[ft.Control] = None
     ) -> None:
         """`content` will override `card_src` if not `None`."""
         self.src: Optional[str] = card_src
-        self.content: Optional[ft.Container | ft.Control] = None
+        self.content: ft.Control = None
         self.content = self._build_img(card_src) if content is None else content
         
     def _build_img(self, card_src: str) -> ft.Container:
         """Builds a `CardImage` with `card_src` as the `src`."""
-        return ft.Container(CardImage(card_src))
+        card_img = CardImage(card_src)
+        return ft.Container(
+            card_img, col=2, padding=4,
+            alignment=ft.Alignment.CENTER
+        )
     
     def replace_content(self, content: ft.Control) -> None:
         """Replaces the content with a different control."""
@@ -91,11 +94,11 @@ class CardComponent:
         if self.content.page:
             self.content.update()
             
-    def control(self) -> ft.AnimatedSwitcher:
+    def control(self):
         """Return the wrapped control for UI placement."""
         return self.content
     
-    def __call__(self) -> ft.AnimatedSwitcher:
+    def __call__(self):
         """Allow the instance to be used directly in Flet controls."""
         return self.content
 
