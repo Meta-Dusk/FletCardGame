@@ -9,17 +9,21 @@ from pathlib import Path
 
 class Player:
     def __init__(
-        self, page: ft.Page, global_deck: list[Card],
-        *, is_dealer: bool = False, debug: bool = False
+        self, page: ft.Page, deck: list[Card],
+        *, is_dealer: bool = False, debug: bool = False,
+        name: str = "", id: int = 0
     ):
         self.page = page
         self.is_dealer: bool = is_dealer
         self.debug: bool = debug
-        self.global_deck: list[Card] = global_deck
+        self.deck: list[Card] = deck
         self.deck_in_hand: list[Card] = []
         self.total_card_value: int = 0
         self.rendered_cards: list[ft.Container] = []
-        self.card_list_data: list[CardComponent] = []
+        self.has_bet: bool = False
+        self.money: float = 0
+        self.name = name
+        self.id = id
     
     def _get_path(self) -> Path:
         match self.page.theme_mode:
@@ -39,12 +43,11 @@ class Player:
             print(f"{handle} {msg}")
     
     def clear_deck(self) -> None:
-        """Resets all values (except for `global_deck`)."""
+        """Resets all values (except for `deck`)."""
         self._debug_msg("(clear_deck) Clearing deck and resetting all values.\n")
         self.deck_in_hand.clear()
         self.total_card_value = 0
         self.rendered_cards.clear()
-        self.card_list_data.clear()
     
     def calculate_hand_value(self, cards: list[Card]) -> int:
         """
@@ -81,18 +84,18 @@ class Player:
         - Update total card value.
         """
         drawn_card: Optional[Card] = None
-        if len(self.global_deck) == 0:
+        if len(self.deck) == 0:
             self._debug_msg("\n(draw_card) Global deck is empty.")
             return
         
         # Draw a card from global deck
-        drawn_card = random.choice(self.global_deck)
+        drawn_card = random.choice(self.deck)
         self._debug_msg(f"(draw_card) Drawn a card: {drawn_card}")
         
         # Remove drawn card from global deck
-        print(f"Global deck size changed: {len(self.global_deck)} ->", end=" ")
-        self.global_deck.remove(drawn_card)
-        print(len(self.global_deck))
+        print(f"Global deck size changed: {len(self.deck)} ->", end=" ")
+        self.deck.remove(drawn_card)
+        print(len(self.deck))
         
         # Build the drawn card
         self.deck_in_hand.append(drawn_card)
@@ -113,7 +116,6 @@ class Player:
         
         # Clear rendered UI lists
         self.rendered_cards.clear()
-        self.card_list_data.clear()
         
         # Rebuild each card from the player's current deck
         for card in self.deck_in_hand:
@@ -137,11 +139,10 @@ class Player:
         self._debug_msg(f"(build_card) Building a new card with src: {new_card_src}\n")
         new_card = CardComponent(new_card_src)
         self.rendered_cards.append(new_card())
-        self.card_list_data.append(new_card)
 
 
 # === CLASS PREVIEW ===
-from cards import WHITE_CARDS_VALUES
+from cards import WHITE_CARDS_LIST
 from components import preset_appbar, theme_button, exit_button, simple_button
 from layouts import preset_win_drag_area
 
@@ -160,6 +161,12 @@ async def test(page: ft.Page):
             container.bgcolor = ft.Colors.ERROR_CONTAINER
             text: ft.Text = container.content
             text.color = ft.Colors.ERROR
+            card_val_total.update()
+        elif player.total_card_value == 21:
+            container: ft.Container = card_val_total.content
+            container.bgcolor = ft.Colors.INVERSE_SURFACE
+            text: ft.Text = container.content
+            text.color = ft.Colors.INVERSE_PRIMARY
             card_val_total.update()
         else:
             container: ft.Container = card_val_total.content
@@ -186,9 +193,8 @@ async def test(page: ft.Page):
         update_text_displays()
     
     # Setup
-    white_cards_list = WHITE_CARDS_VALUES.copy()
+    white_cards_list = WHITE_CARDS_LIST.copy()
     player = Player(page, white_cards_list, debug=True)
-    dealer = Player(page, white_cards_list, is_dealer=True)
     
     # Displays
     card_val_total_text = ft.Text(

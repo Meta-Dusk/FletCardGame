@@ -1,15 +1,15 @@
 import flet as ft
-from utilities import assign_values, get_file_names, format_card
+from utilities import assign_values, get_file_names
 from components import WHITE_CARDS_PATH, BLACK_CARDS_PATH
 from images import CardImage
 from datatypes import Card
 from typing import Optional
 
 
-WHITE_CARDS_LIST = get_file_names(WHITE_CARDS_PATH)
-BLACK_CARDS_LIST = get_file_names(BLACK_CARDS_PATH)
-WHITE_CARDS_VALUES = assign_values(WHITE_CARDS_LIST)
-BLACK_CARDS_VALUES = assign_values(BLACK_CARDS_LIST)
+WHITE_CARDS_SRC_LIST = get_file_names(WHITE_CARDS_PATH)
+BLACK_CARDS_SRC_LIST = get_file_names(BLACK_CARDS_PATH)
+WHITE_CARDS_LIST = assign_values(WHITE_CARDS_SRC_LIST)
+BLACK_CARDS_LIST = assign_values(BLACK_CARDS_SRC_LIST)
 DEBUG = False
 
 
@@ -36,7 +36,7 @@ def get_card_value(card_src: str) -> Card:
     card_file = split_dirs[len(split_dirs) - 1]
     card_color = split_dirs[len(split_dirs) - 2]
     
-    deck = WHITE_CARDS_VALUES if card_color == "white" else BLACK_CARDS_VALUES
+    deck = WHITE_CARDS_LIST if card_color == "white" else BLACK_CARDS_LIST
     card_value = find_card(deck, card_file)
     return card_value
 
@@ -52,33 +52,21 @@ def get_card_counterpart(card_src: str, *, invert: bool = False) -> Card:
         )
         _debug_print(f"Card color is now {card_color}")
         card = find_card(
-            BLACK_CARDS_VALUES if card_color == "white" else WHITE_CARDS_VALUES,
+            BLACK_CARDS_LIST if card_color == "white" else WHITE_CARDS_LIST,
             card_src
         )
         return card
     else:
         _debug_print(f"Getting card counterpart for card of color: {card_color}")
         card = find_card(
-            BLACK_CARDS_VALUES if card_color == "black" else WHITE_CARDS_VALUES,
+            BLACK_CARDS_LIST if card_color == "black" else WHITE_CARDS_LIST,
             card_src
         )
         return card
 
-def print_card_names() -> None:
-    print("\nPrinting all the names of the white cards list:")
-    for i in range(len(WHITE_CARDS_VALUES)):
-        print(f"{WHITE_CARDS_VALUES[i].name}")
-    print("\nPrinting all the names of the black cards list:")
-    for i in range(len(BLACK_CARDS_VALUES)):
-        print(f"{BLACK_CARDS_VALUES[i].name}")
-
-def print_card_values() -> None:
-    print("\nPrinting all the values of the white cards list:")
-    for i in range(len(WHITE_CARDS_VALUES)):
-        print(f"{WHITE_CARDS_VALUES[i]}")
-    print("\nPrinting all the values of the black cards list:")
-    for i in range(len(BLACK_CARDS_VALUES)):
-        print(f"{BLACK_CARDS_VALUES[i]}")
+def print_card_list(list: list[Card]) -> None:
+    for i in range(len(list)):
+        print(f"{list[i]}")
 
 
 # == COMPONENTS ==
@@ -127,5 +115,7 @@ class CardComponent:
 
 
 if __name__ == "__main__":
-    print_card_names()
-    print_card_values()
+    print("Printing all the possible white cards: ")
+    print_card_list(WHITE_CARDS_LIST)
+    print("\nPrinting all the possible black cards: ")
+    print_card_list(BLACK_CARDS_LIST)
