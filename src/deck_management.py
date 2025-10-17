@@ -11,19 +11,20 @@ class Player:
     def __init__(
         self, page: ft.Page, deck: list[Card],
         *, is_dealer: bool = False, debug: bool = False,
-        name: str = "", id: int = 0
+        name: str = "", id: int = 0, money: float = 0
     ):
         self.page = page
+        self.deck: list[Card] = deck
         self.is_dealer: bool = is_dealer
         self.debug: bool = debug
-        self.deck: list[Card] = deck
+        self.name = name
+        self.id = id
+        self.money = money
         self.deck_in_hand: list[Card] = []
         self.total_card_value: int = 0
         self.rendered_cards: list[ft.Container] = []
         self.has_bet: bool = False
-        self.money: float = 0
-        self.name = name
-        self.id = id
+        self.current_bet: float = 0
     
     def _get_path(self) -> Path:
         match self.page.theme_mode:
