@@ -18,3 +18,8 @@ class CardImage(ft.Image):
             error_content=error_content or error_container("SOURCE ERROR"),
             fit=fit, gapless_playback=gapless_playback
         )
+    
+    def change_src(self, new_src: str) -> None:
+        self.src = new_src
+        if self.page:
+            self.update()

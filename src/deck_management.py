@@ -25,6 +25,8 @@ class Player:
         self.rendered_cards: list[ft.Container] = []
         self.has_bet: bool = False
         self.current_bet: float = 0
+        self.finished_turn: bool = False
+        self.has_lost: bool = False
     
     def _get_path(self) -> Path:
         match self.page.theme_mode:
@@ -34,6 +36,8 @@ class Player:
             case ft.ThemeMode.DARK:
                 self._debug_msg("(_get_path) Returning white cards path.\n")
                 return WHITE_CARDS_PATH
+            case ft.ThemeMode.SYSTEM:
+                raise TypeError("Make sure to always set a default ThemeMode for the page: DARK or LIGHT only.")
     
     def _get_card_src(self, card_src: str) -> str:
         return format_card(self._get_path(), card_src)

@@ -92,19 +92,32 @@ class CardComponent:
     def replace_content(self, content: ft.Control) -> None:
         """Replaces the content with a different control."""
         self.src = None
-        self.content.content = content
-        if self.content.page:
-            self.content.update()
+        container: ft.Container = self.content
+        container.content = content
+        if container.page:
+            container.update()
     
-    def update_img(self, card_src: str) -> None:
+    def update_img(self, card_src: Optional[str]) -> None:
         """Safely update the image inside the wrapper."""
-        if self.content is None:
+        if self.content is None or self.src is None:
             return
-        self.src = card_src
-        self.content.src = card_src
-        if self.content.page:
-            self.content.update()
-            
+        container: ft.Container = self.content
+        image: CardImage = container.content
+        if card_src:
+            image.change_src(card_src)
+            self.src = card_src
+        else:
+            image.change_src(self.src)
+    
+    def hide_card(self) -> None:
+        """Hides the card's face."""
+        if self.content is None or self.src is None:
+            return
+        container: ft.Container = self.content
+        image: CardImage = container.content
+        image.change_src(None)
+        self.src = None
+    
     def control(self):
         """Return the wrapped control for UI placement."""
         return self.content

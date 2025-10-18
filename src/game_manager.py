@@ -94,16 +94,20 @@ class BlackJackGame:
         self._debug_msg("(start_game) Make your bets!\n")
     
     def _check_bets(self) -> bool:
+        _not_all_ready: bool = True
         for player in self.player_list:
             if not player.has_bet:
-                self._debug_msg(f"(_check_bets) Player \"{player.name}\" (id:{player.id}) hasn't published a bet yet!\n")
-                return False
+                self._debug_msg(f"(_check_bets) Player \"{player.name}\" (id:{player.id}) hasn't published a bet yet!")
+                _not_all_ready = False
+        if not _not_all_ready:
+            self._debug_msg("(_check_bets) There are players that haven't submitted a bet yet!\n")
+            return False
         self._debug_msg("(_check_bets) All players have submitted their bets.\n")
         return True
     
     def publish_bets(self) -> None:
         if self.game_state != GameState.BETTING_PHASE:
-            self._debug_msg("(publish_bets) Game State is no longer at Betting Phase!\n")
+            self._debug_msg("(publish_bets) Game State is not at Betting Phase!\n")
             return
         self._debug_msg("(publish_bets) Attempting to publish bets.")
         if self._check_bets():
@@ -114,8 +118,15 @@ class BlackJackGame:
     def next_turn(self) -> None:
         # Save game state then proceed to next round
         if self.game_state != GameState.GAME_PHASE:
-            self._debug_msg("(next_turn) Game State is no longer at Game Phase!\n")
+            self._debug_msg("(next_turn) Game State is not at Game Phase!\n")
             return
+        for player in self.player_list:
+            if not player.finished_turn:
+                self._debug_msg(f"(next_turn) Not all players have finished their turn!\n")
+                return
+        self._debug_msg(f"(next_turn) Moving on to the Dealer Phase.\n")
+        self.game_start = GameState.DEALER_PHASE
+        # Dealer will reveal their cards
     
     def restart(self) -> None:
         self.local_deck.clear()
@@ -127,10 +138,13 @@ class BlackJackGame:
     def bet(self, player_id: int, bet_amount: float = None, all_in: bool = False) -> None:
         """Set a player's bet."""
         if self.game_state != GameState.BETTING_PHASE:
-            self._debug_msg("(bet) Game State is no longer at Betting Phase!\n")
+            self._debug_msg("(bet) Game State is not at Betting Phase!\n")
             return
-        player = self.player_list[player_id + 1] # Player ID always starts at 1. The dealer's ID is 0.
+        player = self.player_list[player_id - 1] # Player ID always starts at 1. The dealer's ID is 0.
         _msg = f"(bet) Player \"{player.name}\" (id:{player.id}),"
+        if player.has_lost:
+            self._debug_msg(f"{_msg} you have already lost!\n")
+            return
         if bet_amount is None and not all_in:
             bet_amount = self.minimum_bet
         elif all_in:
@@ -147,10 +161,13 @@ class BlackJackGame:
     
     def cancel_bet(self, player_id: int) -> None:
         if self.game_state != GameState.BETTING_PHASE:
-            self._debug_msg("(cancel_bet) Game State is no longer at Betting Phase!\n")
+            self._debug_msg("(cancel_bet) Game State is not at Betting Phase!\n")
             return
-        player = self.player_list[player_id + 1]
+        player = self.player_list[player_id - 1]
         _msg = f"(hit) Player \"{player.name}\" (id:{player.id}),"
+        if player.has_lost:
+            self._debug_msg(f"{_msg} you have already lost!\n")
+            return
         self._debug_msg(f"{_msg} has cancelled their bet.")
         player.has_bet = False
         player.current_bet = 0
@@ -158,31 +175,43 @@ class BlackJackGame:
     def hit(self, player_id: int) -> None:
         """Draw a card for a player."""
         if self.game_state != GameState.GAME_PHASE:
-            self._debug_msg("(bet) Game State is no longer at Game Phase!\n")
+            self._debug_msg("(bet) Game State is not at Game Phase!\n")
             return
-        player = self.player_list[player_id + 1]
+        player = self.player_list[player_id - 1]
         _msg = f"(hit) Player \"{player.name}\" (id:{player.id}),"
-        if player.total_card_value > 21:
-            self._debug_msg(f"{_msg} you have lost. Your total card value has exceeded 21!\n")
+        if player.has_lost:
+            self._debug_msg(f"{_msg} you have already lost!\n")
             return
         self._debug_msg(f"{_msg} has drawn a card!\n")
         player.draw_card()
+        if player.total_card_value > 21:
+            self._debug_msg(f"{_msg} you have lost. Your total card value has exceeded 21!\n")
+            player.finished_turn = True
+            player.has_lost = True
+            return
     
-    def stand(self) -> None:
+    def stand(self, player_id: int) -> None:
         # Pass turn to Dealer
         if self.game_state != GameState.GAME_PHASE:
-            self._debug_msg("(stand) Game State is no longer at Game Phase!\n")
+            self._debug_msg("(stand) Game State is not at Game Phase!\n")
             return
-        self.game_start = GameState.DEALER_PHASE
+        player = self.player_list[player_id - 1]
+        _msg = f"(stand) Player \"{player.name}\" (id:{player.id}),"
+        if player.has_lost:
+            self._debug_msg(f"{_msg} you have already lost!\n")
+            return
+        self._debug_msg(f"{_msg} has chose to stand.\n")
+        player.finished_turn = True
 
 
 from cards import WHITE_CARDS_LIST    
-from layouts import DefaultRow, preset_win_drag_area
+from layouts import default_row, preset_win_drag_area, default_column
 
 def before_test(page: ft.Page):
     page.title = "Game Manager Test"
     page.vertical_alignment = ft.MainAxisAlignment.END
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.theme_mode = ft.ThemeMode.DARK
 
 async def test(page: ft.Page):
     game = BlackJackGame(page, WHITE_CARDS_LIST)
@@ -192,27 +221,109 @@ async def test(page: ft.Page):
     
     game.player_count = int(input("Enter player_count: "))
     _pc_msg = "players" if game.player_count > 1 else "player"
-    print(f"There will now be {game.player_count} {_pc_msg} (excluding the dealer) for the game.")
+    print(f"There will now be {game.player_count} {_pc_msg} (excluding the dealer) for the game.\n")
     
     game.start_game()
     game.publish_bets()
     
-    player_containers: list[ft.Control] = []
+    current_player_id: int = 1
+    
+    player_containers: list[ft.Container] = []
     for i in range(game.player_count):
         _p = game.player_list[i]
-        _p_text = ft.Text(f"{_p.name} (id:{_p.id})", text_align=ft.TextAlign.CENTER)
+        _p_text = ft.Text(
+            spans=[
+                ft.TextSpan(f"{_p.name} (id:{_p.id}) | "),
+                ft.TextSpan(_p.total_card_value)
+            ],
+            text_align=ft.TextAlign.CENTER, size=16,
+            color=ft.Colors.SECONDARY if (i + 1) != current_player_id else ft.Colors.PRIMARY
+        )
         _p_cont = ft.Container(
             content=_p_text, padding=8,
-            bgcolor=ft.Colors.PRIMARY_CONTAINER,
+            bgcolor=ft.Colors.ON_SECONDARY if (i + 1) != current_player_id else ft.Colors.ON_PRIMARY,
             alignment=ft.Alignment.CENTER,
-            border_radius=8
+            border_radius=8, data=i + 1
         )
         print(f"Made a container for player \"{_p.name}\" (id:{_p.id})")
         player_containers.append(_p_cont)
+    player_row = default_row(player_containers)
     
-    player_row = DefaultRow(player_containers, vertical_alignment=ft.CrossAxisAlignment.END)
-    form = preset_win_drag_area(ft.Container(player_row, expand=False))
+    def update_buttons():
+        player = game.player_list[current_player_id - 1]
+        for btn in button_row.controls:
+            if btn is not next_round_btn and player.has_lost:
+                btn.disabled = True
+            else:
+                btn.disabled = False
+        button_row.update()
+    
+    def npb_on_click(_):
+        nonlocal current_player_id
+        if current_player_id < game.player_count:
+            current_player_id += 1
+        else:
+            current_player_id = 1
+        print(f"Current Player ID: {current_player_id}")
+        for container in player_containers:
+            container: ft.Container
+            text: ft.Text = container.content
+            if container.data == current_player_id:
+                container.bgcolor = ft.Colors.ON_PRIMARY
+                text.color = ft.Colors.PRIMARY
+            else:
+                container.bgcolor = ft.Colors.ON_SECONDARY
+                text.color = ft.Colors.SECONDARY
+        player_row.update()
+        update_buttons()
+    
+    def hb_on_click(_):
+        game.hit(current_player_id)
+        _p_index = current_player_id - 1
+        _p = game.player_list[_p_index]
+        _p_cont = player_containers[_p_index]
+        _p_text: ft.Text = _p_cont.content
+        _p_text.spans[1].text = _p.total_card_value
+        if _p.has_lost:
+            _p_cont.bgcolor = ft.Colors.ERROR_CONTAINER
+            _p_text.color = ft.Colors.ERROR
+        _p_cont.update()
+        update_buttons()
+    
+    def bb_on_click(_):
+        game.bet(current_player_id)
+        publish_bets_btn.disabled = False
+        cancel_bet_btn_btn.disabled = False
+        publish_bets_btn.update()
+    
+    def pbb_on_click(_):
+        game.publish_bets()
+        for btn in [hit_btn, stand_btn, next_round_btn]:
+            btn.disabled = False
+        button_row.update()
+    
+    next_player_btn = ft.Button(
+        "Next Player", on_click=npb_on_click,
+        disabled=True if game.player_count == 1 else False
+    )
+    bet_btn = ft.Button("Bet", on_click=bb_on_click)
+    cancel_bet_btn_btn = ft.Button("Cancel Bet", on_click=lambda _: game.cancel_bet(current_player_id), disabled=True)
+    all_in_btn = ft.Button("All In", on_click=lambda _: game.bet(current_player_id, all_in=True), disabled=True)
+    hit_btn = ft.Button("Hit", on_click=hb_on_click, disabled=True)
+    stand_btn = ft.Button("Stand", on_click=lambda _: game.stand(current_player_id), disabled=True)
+    next_round_btn = ft.Button("Next Round", on_click=lambda _: game.next_turn(), disabled=True)
+    publish_bets_btn = ft.Button("Publish Bets", on_click=pbb_on_click, disabled=True)
+    button_row = default_row([
+        next_player_btn, bet_btn, cancel_bet_btn_btn, all_in_btn, hit_btn, stand_btn, next_round_btn,
+        publish_bets_btn
+    ])
+    
+    main_column = default_column([player_row, button_row])
+    form = preset_win_drag_area(ft.Container(main_column))
+    
     page.add(form)
+    await page.window.to_front()
+    await page.window.center()
     
 
 if __name__ == "__main__":
