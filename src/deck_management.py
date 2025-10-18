@@ -90,7 +90,7 @@ class Player:
         """
         drawn_card: Optional[Card] = None
         if len(self.deck) == 0:
-            self._debug_msg("\n(draw_card) Global deck is empty.")
+            self._debug_msg("(draw_card) Global deck is empty.\n")
             return
         
         # Draw a card from global deck
@@ -150,15 +150,18 @@ class Player:
 from cards import WHITE_CARDS_LIST
 from components import preset_appbar, theme_button, exit_button, simple_button
 from layouts import preset_win_drag_area
+from notifications import simple_notification, error_notif
 
 def before_test(page: ft.Page):
     page.title = "Deck Management Test"
     page.theme_mode = ft.ThemeMode.DARK
     page.window.title_bar_hidden = True
+    page.window.min_width = 940
+    page.window.min_height = 140
 
 async def test(page: ft.Page):
     # Events
-    def update_text_displays():
+    def update_text_displays() -> None:
         deck_counter_text.spans[1].text = len(white_cards_list)
         deck_counter_text.update()
         if player.total_card_value > 21:
@@ -167,12 +170,14 @@ async def test(page: ft.Page):
             text: ft.Text = container.content
             text.color = ft.Colors.ERROR
             card_val_total.update()
+            error_notif(page, "Your total card value has went over 21!")
         elif player.total_card_value == 21:
             container: ft.Container = card_val_total.content
             container.bgcolor = ft.Colors.INVERSE_SURFACE
             text: ft.Text = container.content
             text.color = ft.Colors.INVERSE_PRIMARY
             card_val_total.update()
+            simple_notification(page, "You got a Black Jack!", duration=2000)
         else:
             container: ft.Container = card_val_total.content
             container.bgcolor = ft.Colors.PRIMARY_CONTAINER
@@ -183,18 +188,23 @@ async def test(page: ft.Page):
         card_val_total_text.update()
     
     # Event Handlers
-    def fab_on_click(_):
+    def fab_on_click(_) -> None:
         player.draw_card()
         card_row.update()
         update_text_displays()
     
-    def theme_btn_on_click(_):
+    def tb_on_click(_) -> None:
         player.update_cards()
         card_row.update()
     
-    def cd_btn_on_click(_):
+    def cdb_on_click(_) -> None:
         player.clear_deck()
         card_row.update()
+        update_text_displays()
+    
+    def rdb_on_click(_) -> None:
+        nonlocal white_cards_list
+        white_cards_list = WHITE_CARDS_LIST.copy()
         update_text_displays()
     
     # Setup
@@ -219,26 +229,30 @@ async def test(page: ft.Page):
         spans=[
             ft.TextSpan("Cards in Deck: "),
             ft.TextSpan(len(white_cards_list))
-        ], color=ft.Colors.TERTIARY
+        ], color=ft.Colors.SECONDARY
     )
     deck_counter = ft.Container(
         ft.Container(
             deck_counter_text, padding=8, alignment=ft.Alignment.CENTER,
-            border_radius=8, bgcolor=ft.Colors.TERTIARY_CONTAINER
+            border_radius=8, bgcolor=ft.Colors.SECONDARY_CONTAINER
         ), padding=8
     )
     
     # Buttons
-    theme_btn = theme_button(page, on_click=theme_btn_on_click)
+    theme_btn = theme_button(page, on_click=tb_on_click)
     exit_btn = exit_button(page)
     clear_deck_btn = simple_button(
-        "Clear Hand", ft.Icons.CREDIT_CARD_OFF, on_click=cd_btn_on_click
+        "Clear Hand", ft.Icons.CREDIT_CARD_OFF, on_click=cdb_on_click
     )
+    reset_deck_btn = ft.Container(simple_button(
+        "Reset Deck", ft.Icons.CREDIT_CARD, on_click=rdb_on_click
+    ), padding=8)
     
     # App Bar
     appbar_actions = [
         card_val_total, deck_counter,
-        clear_deck_btn, theme_btn, exit_btn
+        clear_deck_btn, reset_deck_btn,
+        theme_btn, exit_btn
     ]
     appbar = preset_appbar("Deck Management Test", appbar_actions)
     
@@ -258,6 +272,7 @@ async def test(page: ft.Page):
         on_click=fab_on_click
     )
     page.add(form)
+    # page.on_resize = lambda e: print(e)
     await page.window.center()
     
 if __name__ == "__main__":
