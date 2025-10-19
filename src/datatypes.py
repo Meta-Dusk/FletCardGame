@@ -13,6 +13,10 @@ class CardSuite(Enum):
     DIAMONDS = "Diamonds/Tiles"
     HEARTS = "Hearts"
 
+class BlackJack(Enum):
+    NORMAL = "Normal"
+    NATURAL = "Natural"
+
 @dataclass
 class Card:
     src: str

@@ -1,6 +1,6 @@
 import random
 import flet as ft
-from datatypes import Card, CardType
+from datatypes import Card, CardType, BlackJack
 from cards import CardComponent, get_card_counterpart, WHITE_CARDS_PATH, BLACK_CARDS_PATH
 from utilities import format_card
 from typing import Optional
@@ -53,6 +53,15 @@ class Player:
         self.deck_in_hand.clear()
         self.total_card_value = 0
         self.rendered_cards.clear()
+    
+    def hand_is_blackjack(self) -> Optional[BlackJack]:
+        if self.total_card_value != 21:
+            return None
+        hand_size = len(self.deck_in_hand)
+        if hand_size > 2:
+            return BlackJack.NORMAL
+        else:
+            return BlackJack.NATURAL
     
     def calculate_hand_value(self, cards: list[Card]) -> int:
         """
