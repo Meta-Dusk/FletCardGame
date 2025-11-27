@@ -4,13 +4,13 @@ version = "0.1.0"
 description = "A Flet-based Black Jack Card Game"
 readme = "README.md"
 requires-python = ">=3.13"
-authors = [
-  { name = "MetaDusk", email = "andredcxxv@gmail.com" }
-]
+authors = [{ name = "MetaDusk", email = "andredcxxv@gmail.com" }]
 license = { text = "MIT" }
 
 dependencies = [
-  "flet[all]==0.70.0.dev6214",
+  "flet-cli==0.70.0.dev6845",
+  "flet-desktop==0.70.0.dev6845",
+  "flet==0.70.0.dev6845",
 ]
 
 [tool.flet]
@@ -24,9 +24,7 @@ cleanup_on_compile = true
 build_number = 1
 
 [tool.flet.assets]
-include = [
-  "assets/**"
-]
+include = ["assets/**"]
 
 [tool.flet.splash]
 color = "#ffffff"

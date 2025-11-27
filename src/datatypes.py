@@ -25,5 +25,4 @@ class Card:
     suite: CardSuite
     value: list[int]
     color: str
-    hidden: bool = True
     

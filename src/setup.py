@@ -10,7 +10,7 @@ def before_main_ui(page: ft.Page) -> None:
     """Call this before the main UI."""
     page.title = "Flet Jack"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.vertical_alignment = ft.MainAxisAlignment.END
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.decoration = ft.BoxDecoration(
         border=ft.Border.all(4, ft.Colors.SURFACE_CONTAINER_HIGHEST)
     )

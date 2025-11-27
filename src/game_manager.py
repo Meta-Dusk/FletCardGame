@@ -129,7 +129,6 @@ class BlackJackGame:
                 return
         self._debug_msg(f"(next_turn) Moving on to the Dealer Phase.\n")
         self.game_start = GameState.DEALER_PHASE
-        self.dealer_phase()
     
     def dealer_phase(self) -> bool | None:
         """The dealer's turn."""

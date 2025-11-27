@@ -109,15 +109,6 @@ class CardComponent:
         else:
             image.change_src(self.src)
     
-    def hide_card(self) -> None:
-        """Hides the card's face."""
-        if self.content is None or self.src is None:
-            return
-        container: ft.Container = self.content
-        image: CardImage = container.content
-        image.change_src(None)
-        self.src = None
-    
     def control(self):
         """Return the wrapped control for UI placement."""
         return self.content
